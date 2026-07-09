@@ -374,13 +374,13 @@ async function fetchLogEntries(logDate) {
   return data;
 }
 
-async function insertLogEntry({ refType, refId, servings, logDate }) {
+async function insertLogEntry({ refType, refId, servings, logDate, clientKey }) {
   const { error } = await getSupabase().from("log_entries").insert({
     ref_type: refType,
     ref_id: refId,
     servings,
     log_date: logDate,
-    client_key: crypto.randomUUID(),
+    client_key: clientKey,
   });
   if (error) throw error;
 }
@@ -961,12 +961,14 @@ function TodayView({ blocks, meals, blocksById, mealsById }) {
 
   const handleLog = async () => {
     if (!pickId) return;
+    const clientKey = crypto.randomUUID();
     try {
       await insertLogEntry({
         refType: logType,
         refId: pickId,
         servings: Number(pickServings) || 1,
         logDate: today,
+        clientKey,
       });
       setShowPicker(false);
       setPickServings(1);
