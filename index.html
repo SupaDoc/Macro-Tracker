@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>22nd Century Caveman</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+<!-- Local config: copy config.example.js -> config.js and fill in Supabase values -->
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<style>
+  :root {
+    --bg: #0E0E0F;
+    --bg-raised: #17171A;
+    --stone: #C8B89A;
+    --bone: #F0EDE6;
+    --accent: #E8622A;
+    --line: #2A2A2D;
+    --danger: #C4453B;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--bone);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh;
+  }
+  h1, h2, h3, .headline {
+    font-family: "Oswald", sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    font-weight: 700;
+    margin: 0;
+  }
+  .mono, .macro-value, input[type="number"] {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+  }
+  button {
+    font-family: inherit;
+    cursor: pointer;
+  }
+  input, select, textarea {
+    font-family: inherit;
+    font-size: 1rem;
+  }
+  #root { min-height: 100vh; }
+
+  .app-shell { max-width: 640px; margin: 0 auto; padding: 0 16px 64px; }
+
+  .top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 0 12px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 16px;
+  }
+  .brand { font-size: 1.3rem; color: var(--bone); }
+  .brand span { color: var(--accent); }
+  .signout-btn {
+    background: none;
+    border: 1px solid var(--line);
+    color: var(--stone);
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .signout-btn:hover { border-color: var(--stone); }
+
+  .tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+  .tab-btn {
+    flex: 1;
+    background: var(--bg-raised);
+    border: 1px solid var(--line);
+    color: var(--stone);
+    padding: 10px;
+    border-radius: 6px;
+    font-family: "Oswald", sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 0.85rem;
+  }
+  .tab-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #1a0d06;
+  }
+
+  .card {
+    background: var(--bg-raised);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+
+  .macro-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  .macro-stat {
+    background: var(--bg-raised);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 6px;
+    text-align: center;
+  }
+  .macro-stat .label {
+    font-size: 0.65rem;
+    color: var(--stone);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .macro-value {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--bone);
+  }
+
+  .totem-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .totem-item:last-child { border-bottom: none; }
+  .totem-item .name { font-weight: 600; }
+  .totem-item .sub { color: var(--stone); font-size: 0.8rem; }
+  .totem-item .macros { font-size: 0.75rem; color: var(--stone); }
+  .remove-btn {
+    background: none;
+    border: none;
+    color: var(--danger);
+    font-size: 1.1rem;
+    line-height: 1;
+    padding: 4px 8px;
+  }
+
+  .btn {
+    background: var(--accent);
+    color: #1a0d06;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+  .btn:disabled { opacity: 0.5; cursor: default; }
+  .btn-outline {
+    background: none;
+    border: 1px solid var(--line);
+    color: var(--bone);
+    padding: 10px 16px;
+    border-radius: 6px;
+  }
+  .btn-outline:hover { border-color: var(--stone); }
+  .btn-block { width: 100%; }
+
+  .field { margin-bottom: 12px; }
+  .field label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--stone);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 6px;
+  }
+  .field input, .field textarea, .field select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    color: var(--bone);
+    padding: 10px;
+    border-radius: 6px;
+  }
+  .field input:focus, .field textarea:focus, .field select:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .ingredient-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 0.85rem;
+  }
+  .search-result {
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    margin-bottom: 6px;
+  }
+  .search-result:hover { border-color: var(--stone); }
+  .search-result .desc { font-size: 0.85rem; }
+  .search-result .meta { font-size: 0.7rem; color: var(--stone); }
+
+  .banner {
+    background: rgba(196, 69, 59, 0.15);
+    border: 1px solid var(--danger);
+    color: var(--bone);
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    margin-bottom: 16px;
+  }
+  .muted { color: var(--stone); font-size: 0.85rem; }
+  .center-screen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .auth-card { width: 100%; max-width: 360px; text-align: center; }
+  .auth-card .headline { font-size: 1.8rem; margin-bottom: 4px; }
+  .auth-card .tagline { color: var(--stone); font-size: 0.85rem; margin-bottom: 24px; }
+  .row-flex { display: flex; gap: 8px; }
+  .row-flex > * { flex: 1; }
+  .block-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .icon-btn {
+    background: none;
+    border: none;
+    color: var(--stone);
+    font-size: 0.9rem;
+    padding: 4px 8px;
+  }
+  .icon-btn:hover { color: var(--bone); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useCallback, useMemo } = React;
+
+// ---------------------------------------------------------------------------
+// Macro math — ingredient macros are always pre-scaled to the quantity used.
+// Totals are computed here, at render time, and never persisted.
+// ---------------------------------------------------------------------------
+const MACRO_KEYS = ["calories", "protein_g", "carbs_g", "fat_g", "fiber_g"];
+
+function emptyMacros() {
+  return { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, fiber_g: 0 };
+}
+
+function addMacros(a, b) {
+  const out = {};
+  MACRO_KEYS.forEach((k) => { out[k] = (a[k] || 0) + (b[k] || 0); });
+  return out;
+}
+
+function sumMacros(list) {
+  return list.reduce((acc, item) => addMacros(acc, item), emptyMacros());
+}
+
+function scaleMacros(m, factor) {
+  const out = {};
+  MACRO_KEYS.forEach((k) => { out[k] = (m[k] || 0) * factor; });
+  return out;
+}
+
+function blockTotals(block) {
+  return sumMacros(block.ingredients || []);
+}
+
+function mealTotals(meal, blocksById) {
+  return (meal.items || []).reduce((acc, item) => {
+    if (item.ref_type !== "block") return acc;
+    const block = blocksById[item.ref_id];
+    if (!block) return acc;
+    return addMacros(acc, scaleMacros(blockTotals(block), item.servings));
+  }, emptyMacros());
+}
+
+function round1(n) {
+  return Math.round((n || 0) * 10) / 10;
+}
+
+function localDateStr(d) {
+  const date = d || new Date();
+  const offsetMs = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() - offsetMs).toISOString().slice(0, 10);
+}
+
+// ---------------------------------------------------------------------------
+// USDA lookup via Netlify function proxy (keeps USDA_API_KEY server-side)
+// ---------------------------------------------------------------------------
+async function usdaSearch(query) {
+  const res = await fetch(`/.netlify/functions/usda-search?q=${encodeURIComponent(query)}`);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "USDA search failed");
+  return data.foods;
+}
+
+async function usdaFood(fdcId) {
+  const res = await fetch(`/.netlify/functions/usda-food?fdcId=${encodeURIComponent(fdcId)}`);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "USDA food lookup failed");
+  return data;
+}
+
+// ---------------------------------------------------------------------------
+// Supabase data access
+// ---------------------------------------------------------------------------
+let supabaseClient = null;
+function getSupabase() {
+  if (!supabaseClient) {
+    supabaseClient = window.supabase.createClient(
+      window.APP_CONFIG.SUPABASE_URL,
+      window.APP_CONFIG.SUPABASE_ANON_KEY
+    );
+  }
+  return supabaseClient;
+}
+
+async function fetchBlocks() {
+  const { data, error } = await getSupabase()
+    .from("blocks")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data;
+}
+
+async function saveBlock(block) {
+  const sb = getSupabase();
+  const payload = {
+    name: block.name,
+    notes: block.notes || null,
+    ingredients: block.ingredients,
+    default_servings: block.default_servings || 1,
+  };
+  if (block.id) {
+    const { error } = await sb.from("blocks").update(payload).eq("id", block.id);
+    if (error) throw error;
+  } else {
+    const { error } = await sb.from("blocks").insert(payload);
+    if (error) throw error;
+  }
+}
+
+async function deleteBlock(id) {
+  const { error } = await getSupabase().from("blocks").delete().eq("id", id);
+  if (error) throw error;
+}
+
+async function fetchLogEntries(logDate) {
+  const { data, error } = await getSupabase()
+    .from("log_entries")
+    .select("*")
+    .eq("log_date", logDate)
+    .order("logged_at", { ascending: true });
+  if (error) throw error;
+  return data;
+}
+
+async function insertLogEntry({ refType, refId, servings, logDate }) {
+  const { error } = await getSupabase().from("log_entries").insert({
+    ref_type: refType,
+    ref_id: refId,
+    servings,
+    log_date: logDate,
+    client_key: crypto.randomUUID(),
+  });
+  if (error) throw error;
+}
+
+async function deleteLogEntry(id) {
+  const { error } = await getSupabase().from("log_entries").delete().eq("id", id);
+  if (error) throw error;
+}
+
+async function fetchMeals() {
+  const { data, error } = await getSupabase()
+    .from("meal_plans")
+    .select("*")
+    .eq("type", "meal")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data;
+}
+
+async function saveMeal(meal) {
+  const sb = getSupabase();
+  const payload = { type: "meal", name: meal.name, items: meal.items };
+  if (meal.id) {
+    const { error } = await sb.from("meal_plans").update(payload).eq("id", meal.id);
+    if (error) throw error;
+  } else {
+    const { error } = await sb.from("meal_plans").insert(payload);
+    if (error) throw error;
+  }
+}
+
+async function deleteMeal(id) {
+  const { error } = await getSupabase().from("meal_plans").delete().eq("id", id);
+  if (error) throw error;
+}
+
+// ---------------------------------------------------------------------------
+// Setup / auth screens
+// ---------------------------------------------------------------------------
+function SetupNeeded() {
+  return (
+    <div className="center-screen">
+      <div className="auth-card">
+        <h1 className="headline">22<span style={{ color: "var(--accent)" }}>CC</span></h1>
+        <p className="tagline">Config missing</p>
+        <div className="card" style={{ textAlign: "left" }}>
+          <p className="muted">
+            Copy <code>config.example.js</code> to <code>config.js</code> and fill in your
+            Supabase project URL + anon key, then reload.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AuthScreen() {
+  const [email, setEmail] = useState("");
+  const [sent, setSent] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+
+  const sendLink = async (e) => {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      const { error } = await getSupabase().auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: window.location.origin },
+      });
+      if (error) throw error;
+      setSent(true);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="center-screen">
+      <div className="auth-card">
+        <h1 className="headline">22<span style={{ color: "var(--accent)" }}>CC</span></h1>
+        <p className="tagline">The Kitchen &middot; The Arena &middot; The Mirror</p>
+        {error && <div className="banner">{error}</div>}
+        {sent ? (
+          <div className="card">
+            <p>Check <strong>{email}</strong> for a sign-in link.</p>
+          </div>
+        ) : (
+          <form onSubmit={sendLink}>
+            <div className="field">
+              <label>Email</label>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+              />
+            </div>
+            <button className="btn btn-block" disabled={busy} type="submit">
+              {busy ? "Sending…" : "Send Magic Link"}
+            </button>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Blocks
+// ---------------------------------------------------------------------------
+function BlockEditor({ existingBlock, onSave, onCancel }) {
+  const [name, setName] = useState(existingBlock ? existingBlock.name : "");
+  const [notes, setNotes] = useState(existingBlock ? existingBlock.notes || "" : "");
+  const [ingredients, setIngredients] = useState(existingBlock ? existingBlock.ingredients : []);
+  const [defaultServings, setDefaultServings] = useState(
+    existingBlock ? existingBlock.default_servings : 1
+  );
+
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const [selectedFood, setSelectedFood] = useState(null);
+  const [grams, setGrams] = useState(100);
+  const [error, setError] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  const totals = useMemo(() => sumMacros(ingredients), [ingredients]);
+
+  const runSearch = async (e) => {
+    e.preventDefault();
+    if (!query.trim()) return;
+    setSearching(true);
+    setError(null);
+    setSelectedFood(null);
+    try {
+      const foods = await usdaSearch(query);
+      setResults(foods);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const pickFood = async (food) => {
+    setError(null);
+    try {
+      const detail = await usdaFood(food.fdcId);
+      setSelectedFood(detail);
+      setGrams(detail.servingSize || 100);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const addIngredient = () => {
+    if (!selectedFood || !grams || grams <= 0) return;
+    const factor = grams / 100;
+    const p100 = selectedFood.per100g;
+    const ingredient = {
+      id: crypto.randomUUID(),
+      fdc_id: selectedFood.fdcId,
+      name: selectedFood.description,
+      grams,
+      calories: round1(p100.calories * factor),
+      protein_g: round1(p100.protein_g * factor),
+      carbs_g: round1(p100.carbs_g * factor),
+      fat_g: round1(p100.fat_g * factor),
+      fiber_g: round1(p100.fiber_g * factor),
+    };
+    setIngredients((prev) => [...prev, ingredient]);
+    setSelectedFood(null);
+    setResults([]);
+    setQuery("");
+  };
+
+  const removeIngredient = (id) => {
+    setIngredients((prev) => prev.filter((i) => i.id !== id));
+  };
+
+  const handleSave = async () => {
+    if (!name.trim()) {
+      setError("Name your Block first.");
+      return;
+    }
+    if (ingredients.length === 0) {
+      setError("Add at least one ingredient.");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      await onSave({
+        id: existingBlock ? existingBlock.id : undefined,
+        name: name.trim(),
+        notes: notes.trim(),
+        ingredients,
+        default_servings: Number(defaultServings) || 1,
+      });
+    } catch (err) {
+      setError(err.message);
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="card">
+      <h3 style={{ marginBottom: 16 }}>{existingBlock ? "Edit Block" : "New Block"}</h3>
+      {error && <div className="banner">{error}</div>}
+
+      <div className="field">
+        <label>Name</label>
+        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Chicken + Rice Bowl" />
+      </div>
+      <div className="field">
+        <label>Notes (optional)</label>
+        <textarea rows="2" value={notes} onChange={(e) => setNotes(e.target.value)} />
+      </div>
+
+      <div className="field">
+        <label>Ingredients</label>
+        {ingredients.length === 0 && <p className="muted">No ingredients yet.</p>}
+        {ingredients.map((ing) => (
+          <div className="ingredient-row" key={ing.id}>
+            <span>{ing.name} — {ing.grams}g</span>
+            <span className="mono">
+              {ing.calories} kcal / {ing.protein_g}p / {ing.carbs_g}c / {ing.fat_g}f
+            </span>
+            <button className="remove-btn" onClick={() => removeIngredient(ing.id)}>&times;</button>
+          </div>
+        ))}
+        {ingredients.length > 0 && (
+          <p className="mono muted" style={{ marginTop: 8 }}>
+            Block total: {round1(totals.calories)} kcal / {round1(totals.protein_g)}p /
+            {" "}{round1(totals.carbs_g)}c / {round1(totals.fat_g)}f
+          </p>
+        )}
+      </div>
+
+      <div className="field">
+        <label>Add ingredient — search USDA FoodData Central</label>
+        <form className="row-flex" onSubmit={runSearch}>
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="e.g. chicken breast, raw" />
+          <button className="btn" type="submit" style={{ flex: "0 0 auto" }} disabled={searching}>
+            {searching ? "…" : "Search"}
+          </button>
+        </form>
+        {results.length > 0 && !selectedFood && (
+          <div style={{ marginTop: 10 }}>
+            {results.map((food) => (
+              <div className="search-result" key={food.fdcId} onClick={() => pickFood(food)}>
+                <div className="desc">{food.description}</div>
+                <div className="meta">
+                  {food.brandOwner ? food.brandOwner + " · " : ""}{food.dataType}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        {selectedFood && (
+          <div className="card" style={{ marginTop: 10 }}>
+            <p><strong>{selectedFood.description}</strong></p>
+            <div className="field">
+              <label>Grams used</label>
+              <input
+                type="number"
+                min="1"
+                value={grams}
+                onChange={(e) => setGrams(Number(e.target.value))}
+              />
+            </div>
+            <div className="row-flex">
+              <button className="btn" onClick={addIngredient}>Add to Block</button>
+              <button className="btn-outline" onClick={() => setSelectedFood(null)}>Cancel</button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="row-flex" style={{ marginTop: 16 }}>
+        <button className="btn" onClick={handleSave} disabled={saving}>
+          {saving ? "Saving…" : "Save Block"}
+        </button>
+        <button className="btn-outline" onClick={onCancel}>Cancel</button>
+      </div>
+    </div>
+  );
+}
+
+function BlocksView({ blocks, refreshBlocks }) {
+  const [editing, setEditing] = useState(null); // null | 'new' | block object
+  const [error, setError] = useState(null);
+
+  const handleSave = async (block) => {
+    await saveBlock(block);
+    setEditing(null);
+    await refreshBlocks();
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Delete this Block? Any logged days that used it will keep their macros, but you won't be able to log it again.")) return;
+    try {
+      await deleteBlock(id);
+      await refreshBlocks();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  if (editing) {
+    return (
+      <BlockEditor
+        existingBlock={editing === "new" ? null : editing}
+        onSave={handleSave}
+        onCancel={() => setEditing(null)}
+      />
+    );
+  }
+
+  return (
+    <div>
+      {error && <div className="banner">{error}</div>}
+      <button className="btn btn-block" style={{ marginBottom: 16 }} onClick={() => setEditing("new")}>
+        + New Block
+      </button>
+      {blocks.length === 0 && <p className="muted">No Blocks yet — build your first one above.</p>}
+      {blocks.map((block) => {
+        const t = blockTotals(block);
+        return (
+          <div className="card block-list-item" key={block.id}>
+            <div>
+              <div className="name">{block.name}</div>
+              <div className="macros mono">
+                {round1(t.calories)} kcal / {round1(t.protein_g)}p / {round1(t.carbs_g)}c / {round1(t.fat_g)}f
+              </div>
+            </div>
+            <div>
+              <button className="icon-btn" onClick={() => setEditing(block)}>Edit</button>
+              <button className="icon-btn" onClick={() => handleDelete(block.id)}>Delete</button>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Meals — named assemblies of Blocks with per-Block serving counts
+// ---------------------------------------------------------------------------
+function MealEditor({ existingMeal, blocks, onSave, onCancel }) {
+  const [name, setName] = useState(existingMeal ? existingMeal.name : "");
+  const [items, setItems] = useState(existingMeal ? existingMeal.items : []);
+  const [pickBlockId, setPickBlockId] = useState(blocks[0] ? blocks[0].id : "");
+  const [pickServings, setPickServings] = useState(1);
+  const [error, setError] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  const blocksById = useMemo(() => {
+    const map = {};
+    blocks.forEach((b) => { map[b.id] = b; });
+    return map;
+  }, [blocks]);
+
+  const totals = useMemo(() => mealTotals({ items }, blocksById), [items, blocksById]);
+
+  const addItem = () => {
+    if (!pickBlockId) return;
+    setItems((prev) => [
+      ...prev,
+      { ref_type: "block", ref_id: pickBlockId, servings: Number(pickServings) || 1 },
+    ]);
+    setPickServings(1);
+  };
+
+  const removeItem = (idx) => {
+    setItems((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleSave = async () => {
+    if (!name.trim()) { setError("Name your Meal first."); return; }
+    if (items.length === 0) { setError("Add at least one Block."); return; }
+    setSaving(true);
+    setError(null);
+    try {
+      await onSave({ id: existingMeal ? existingMeal.id : undefined, name: name.trim(), items });
+    } catch (err) {
+      setError(err.message);
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="card">
+      <h3 style={{ marginBottom: 16 }}>{existingMeal ? "Edit Meal" : "New Meal"}</h3>
+      {error && <div className="banner">{error}</div>}
+      <div className="field">
+        <label>Name</label>
+        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Breakfast Bowl" />
+      </div>
+
+      <div className="field">
+        <label>Blocks in this Meal</label>
+        {items.length === 0 && <p className="muted">No Blocks added yet.</p>}
+        {items.map((item, idx) => {
+          const block = blocksById[item.ref_id];
+          const macros = block ? scaleMacros(blockTotals(block), item.servings) : emptyMacros();
+          return (
+            <div className="ingredient-row" key={idx}>
+              <span>{block ? block.name : "(missing)"} &times; {item.servings}</span>
+              <span className="mono">
+                {round1(macros.calories)} kcal / {round1(macros.protein_g)}p /
+                {" "}{round1(macros.carbs_g)}c / {round1(macros.fat_g)}f
+              </span>
+              <button className="remove-btn" onClick={() => removeItem(idx)}>&times;</button>
+            </div>
+          );
+        })}
+        {items.length > 0 && (
+          <p className="mono muted" style={{ marginTop: 8 }}>
+            Meal total: {round1(totals.calories)} kcal / {round1(totals.protein_g)}p /
+            {" "}{round1(totals.carbs_g)}c / {round1(totals.fat_g)}f
+          </p>
+        )}
+      </div>
+
+      {blocks.length > 0 ? (
+        <div className="field">
+          <label>Add a Block</label>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <select
+              value={pickBlockId}
+              onChange={(e) => setPickBlockId(e.target.value)}
+              style={{ flex: "1 1 140px" }}
+            >
+              {blocks.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+            </select>
+            <input
+              type="number"
+              min="0.25"
+              step="0.25"
+              value={pickServings}
+              onChange={(e) => setPickServings(e.target.value)}
+              style={{ width: 72 }}
+            />
+            <button className="btn" onClick={addItem} style={{ flex: "0 0 auto" }}>Add</button>
+          </div>
+        </div>
+      ) : (
+        <p className="muted">Build Blocks first — Meals are assembled from Blocks.</p>
+      )}
+
+      <div className="row-flex" style={{ marginTop: 16 }}>
+        <button className="btn" onClick={handleSave} disabled={saving || blocks.length === 0}>
+          {saving ? "Saving…" : "Save Meal"}
+        </button>
+        <button className="btn-outline" onClick={onCancel}>Cancel</button>
+      </div>
+    </div>
+  );
+}
+
+function MealsView({ meals, blocks, refreshMeals }) {
+  const [editing, setEditing] = useState(null);
+  const [error, setError] = useState(null);
+
+  const blocksById = useMemo(() => {
+    const map = {};
+    blocks.forEach((b) => { map[b.id] = b; });
+    return map;
+  }, [blocks]);
+
+  const handleSave = async (meal) => {
+    await saveMeal(meal);
+    setEditing(null);
+    await refreshMeals();
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Delete this Meal? Logged entries that reference it will show zero macros.")) return;
+    try {
+      await deleteMeal(id);
+      await refreshMeals();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  if (editing) {
+    return (
+      <MealEditor
+        existingMeal={editing === "new" ? null : editing}
+        blocks={blocks}
+        onSave={handleSave}
+        onCancel={() => setEditing(null)}
+      />
+    );
+  }
+
+  return (
+    <div>
+      {error && <div className="banner">{error}</div>}
+      {blocks.length === 0 && (
+        <div className="banner">Build some Blocks first — Meals are assembled from Blocks.</div>
+      )}
+      <button
+        className="btn btn-block"
+        style={{ marginBottom: 16 }}
+        onClick={() => setEditing("new")}
+        disabled={blocks.length === 0}
+      >
+        + New Meal
+      </button>
+      {meals.length === 0 && <p className="muted">No Meals yet — assemble one above.</p>}
+      {meals.map((meal) => {
+        const t = mealTotals(meal, blocksById);
+        return (
+          <div className="card block-list-item" key={meal.id}>
+            <div>
+              <div className="name">{meal.name}</div>
+              <div className="macros mono">
+                {round1(t.calories)} kcal / {round1(t.protein_g)}p / {round1(t.carbs_g)}c / {round1(t.fat_g)}f
+              </div>
+              <div className="sub">{meal.items.length} block{meal.items.length !== 1 ? "s" : ""}</div>
+            </div>
+            <div>
+              <button className="icon-btn" onClick={() => setEditing(meal)}>Edit</button>
+              <button className="icon-btn" onClick={() => handleDelete(meal.id)}>Delete</button>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Today (the vertical "totem" day view)
+// ---------------------------------------------------------------------------
+function TodayView({ blocks, meals }) {
+  const today = useMemo(() => localDateStr(), []);
+  const [entries, setEntries] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [showPicker, setShowPicker] = useState(false);
+  const [logType, setLogType] = useState("block");
+  const [pickId, setPickId] = useState("");
+  const [pickServings, setPickServings] = useState(1);
+
+  const blocksById = useMemo(() => {
+    const map = {};
+    blocks.forEach((b) => { map[b.id] = b; });
+    return map;
+  }, [blocks]);
+
+  const mealsById = useMemo(() => {
+    const map = {};
+    meals.forEach((m) => { map[m.id] = m; });
+    return map;
+  }, [meals]);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await fetchLogEntries(today);
+      setEntries(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [today]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const dayTotals = useMemo(() => {
+    return entries.reduce((acc, e) => {
+      if (e.ref_type === "block") {
+        const block = blocksById[e.ref_id];
+        if (!block) return acc;
+        return addMacros(acc, scaleMacros(blockTotals(block), e.servings));
+      }
+      if (e.ref_type === "meal_plan") {
+        const meal = mealsById[e.ref_id];
+        if (!meal) return acc;
+        return addMacros(acc, scaleMacros(mealTotals(meal, blocksById), e.servings));
+      }
+      return acc;
+    }, emptyMacros());
+  }, [entries, blocksById, mealsById]);
+
+  const openPicker = () => {
+    const defaultType = meals.length > 0 ? "meal_plan" : "block";
+    const defaultId = defaultType === "meal_plan"
+      ? (meals[0] ? meals[0].id : "")
+      : (blocks[0] ? blocks[0].id : "");
+    setLogType(defaultType);
+    setPickId(defaultId);
+    setPickServings(1);
+    setShowPicker(true);
+  };
+
+  const handleTypeChange = (type) => {
+    setLogType(type);
+    setPickId(type === "meal_plan" ? (meals[0] ? meals[0].id : "") : (blocks[0] ? blocks[0].id : ""));
+  };
+
+  const handleLog = async () => {
+    if (!pickId) return;
+    try {
+      await insertLogEntry({
+        refType: logType,
+        refId: pickId,
+        servings: Number(pickServings) || 1,
+        logDate: today,
+      });
+      setShowPicker(false);
+      setPickServings(1);
+      await load();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleRemove = async (id) => {
+    try {
+      await deleteLogEntry(id);
+      await load();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const canLog = blocks.length > 0 || meals.length > 0;
+
+  return (
+    <div>
+      {error && <div className="banner">{error}</div>}
+
+      <div className="macro-bar">
+        <div className="macro-stat">
+          <div className="label">Cal</div>
+          <div className="macro-value">{round1(dayTotals.calories)}</div>
+        </div>
+        <div className="macro-stat">
+          <div className="label">Protein</div>
+          <div className="macro-value">{round1(dayTotals.protein_g)}</div>
+        </div>
+        <div className="macro-stat">
+          <div className="label">Carbs</div>
+          <div className="macro-value">{round1(dayTotals.carbs_g)}</div>
+        </div>
+        <div className="macro-stat">
+          <div className="label">Fat</div>
+          <div className="macro-value">{round1(dayTotals.fat_g)}</div>
+        </div>
+      </div>
+
+      <div className="card">
+        {loading ? (
+          <p className="muted">Loading…</p>
+        ) : entries.length === 0 ? (
+          <p className="muted">Nothing logged today.</p>
+        ) : (
+          entries.map((e) => {
+            let label, macros, subLabel;
+            if (e.ref_type === "block") {
+              const block = blocksById[e.ref_id];
+              label = block ? block.name : "(deleted block)";
+              macros = block ? scaleMacros(blockTotals(block), e.servings) : emptyMacros();
+              subLabel = `${e.servings}× serving`;
+            } else {
+              const meal = mealsById[e.ref_id];
+              label = meal ? meal.name : "(deleted meal)";
+              macros = meal ? scaleMacros(mealTotals(meal, blocksById), e.servings) : emptyMacros();
+              subLabel = `${e.servings}× meal`;
+            }
+            return (
+              <div className="totem-item" key={e.id}>
+                <div>
+                  <div className="name">{label}</div>
+                  <div className="sub">{subLabel}</div>
+                </div>
+                <div className="macros mono">
+                  {round1(macros.calories)} kcal / {round1(macros.protein_g)}p /
+                  {" "}{round1(macros.carbs_g)}c / {round1(macros.fat_g)}f
+                </div>
+                <button className="remove-btn" onClick={() => handleRemove(e.id)}>&times;</button>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {showPicker ? (
+        <div className="card">
+          <div className="field">
+            <label>Log Type</label>
+            <div className="row-flex">
+              <button
+                className={"btn" + (logType === "block" ? "" : " btn-outline")}
+                onClick={() => handleTypeChange("block")}
+                disabled={blocks.length === 0}
+              >
+                Block
+              </button>
+              <button
+                className={"btn" + (logType === "meal_plan" ? "" : " btn-outline")}
+                onClick={() => handleTypeChange("meal_plan")}
+                disabled={meals.length === 0}
+              >
+                Meal
+              </button>
+            </div>
+          </div>
+          <div className="field">
+            <label>{logType === "block" ? "Block" : "Meal"}</label>
+            <select value={pickId} onChange={(e) => setPickId(e.target.value)}>
+              {(logType === "block" ? blocks : meals).map((item) => (
+                <option key={item.id} value={item.id}>{item.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="field">
+            <label>Servings</label>
+            <input
+              type="number"
+              min="0.25"
+              step="0.25"
+              value={pickServings}
+              onChange={(e) => setPickServings(e.target.value)}
+            />
+          </div>
+          <div className="row-flex">
+            <button className="btn" onClick={handleLog}>Log It</button>
+            <button className="btn-outline" onClick={() => setShowPicker(false)}>Cancel</button>
+          </div>
+        </div>
+      ) : (
+        <button
+          className="btn btn-block"
+          disabled={!canLog}
+          onClick={openPicker}
+        >
+          {!canLog ? "Build a Block first" : "+ Log a Block or Meal"}
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// App shell
+// ---------------------------------------------------------------------------
+function MainApp({ session }) {
+  const [tab, setTab] = useState("today");
+  const [blocks, setBlocks] = useState([]);
+  const [meals, setMeals] = useState([]);
+  const [loadingBlocks, setLoadingBlocks] = useState(true);
+  const [error, setError] = useState(null);
+
+  const refreshBlocks = useCallback(async () => {
+    try {
+      const data = await fetchBlocks();
+      setBlocks(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoadingBlocks(false);
+    }
+  }, []);
+
+  const refreshMeals = useCallback(async () => {
+    try {
+      const data = await fetchMeals();
+      setMeals(data);
+    } catch (err) {
+      setError(err.message);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshBlocks();
+    refreshMeals();
+  }, [refreshBlocks, refreshMeals]);
+
+  return (
+    <div className="app-shell">
+      <div className="top-bar">
+        <div className="brand headline">22<span>CC</span></div>
+        <button className="signout-btn" onClick={() => getSupabase().auth.signOut()}>
+          Sign Out
+        </button>
+      </div>
+
+      <div className="tabs">
+        <button className={"tab-btn" + (tab === "today" ? " active" : "")} onClick={() => setTab("today")}>
+          Today
+        </button>
+        <button className={"tab-btn" + (tab === "meals" ? " active" : "")} onClick={() => setTab("meals")}>
+          Meals
+        </button>
+        <button className={"tab-btn" + (tab === "blocks" ? " active" : "")} onClick={() => setTab("blocks")}>
+          Blocks
+        </button>
+      </div>
+
+      {error && <div className="banner">{error}</div>}
+
+      {loadingBlocks ? (
+        <p className="muted">Loading…</p>
+      ) : tab === "today" ? (
+        <TodayView blocks={blocks} meals={meals} />
+      ) : tab === "meals" ? (
+        <MealsView meals={meals} blocks={blocks} refreshMeals={refreshMeals} />
+      ) : (
+        <BlocksView blocks={blocks} refreshBlocks={refreshBlocks} />
+      )}
+    </div>
+  );
+}
+
+function App() {
+  const [session, setSession] = useState(undefined); // undefined = loading, null = signed out
+
+  useEffect(() => {
+    if (!window.APP_CONFIG) return;
+    const sb = getSupabase();
+    sb.auth.getSession().then(({ data }) => setSession(data.session));
+    const { data: listener } = sb.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession);
+    });
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
+  if (!window.APP_CONFIG || !window.APP_CONFIG.SUPABASE_URL) {
+    return <SetupNeeded />;
+  }
+  if (session === undefined) {
+    return <div className="center-screen"><p className="muted">Loading…</p></div>;
+  }
+  if (!session) {
+    return <AuthScreen />;
+  }
+  return <MainApp session={session} />;
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
