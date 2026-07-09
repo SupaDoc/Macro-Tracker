@@ -1,0 +1,9 @@
+{
+  "name": "22cc",
+  "version": "0.1.0",
+  "private": true,
+  "description": "22nd Century Caveman — personal nutrition/fitness lifestyle OS. Static single-file frontend + Netlify Functions.",
+  "engines": {
+    "node": ">=18"
+  }
+}
