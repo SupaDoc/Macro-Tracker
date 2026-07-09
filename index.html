@@ -498,11 +498,7 @@ function AuthScreen() {
 // ---------------------------------------------------------------------------
 function BlockEditor({ existingBlock, onSave, onCancel }) {
   const [name, setName] = useState(existingBlock ? existingBlock.name : "");
-  const [notes, setNotes] = useState(existingBlock ? existingBlock.notes || "" : "");
   const [ingredients, setIngredients] = useState(existingBlock ? existingBlock.ingredients : []);
-  const [defaultServings, setDefaultServings] = useState(
-    existingBlock ? existingBlock.default_servings : 1
-  );
 
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
@@ -581,9 +577,7 @@ function BlockEditor({ existingBlock, onSave, onCancel }) {
       await onSave({
         id: existingBlock ? existingBlock.id : undefined,
         name: name.trim(),
-        notes: notes.trim(),
         ingredients,
-        default_servings: Number(defaultServings) || 1,
       });
     } catch (err) {
       setError(err.message);
@@ -600,11 +594,6 @@ function BlockEditor({ existingBlock, onSave, onCancel }) {
         <label>Name</label>
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Chicken + Rice Bowl" />
       </div>
-      <div className="field">
-        <label>Notes (optional)</label>
-        <textarea rows="2" value={notes} onChange={(e) => setNotes(e.target.value)} />
-      </div>
-
       <div className="field">
         <label>Ingredients</label>
         {ingredients.length === 0 && <p className="muted">No ingredients yet.</p>}
@@ -686,7 +675,7 @@ function BlocksView({ blocks, refreshBlocks }) {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete this Block? Any logged days that used it will keep their macros, but you won't be able to log it again.")) return;
+    if (!window.confirm("Delete this Block? Log entries that reference it will show zero macros.")) return;
     try {
       await deleteBlock(id);
       await refreshBlocks();
@@ -736,19 +725,13 @@ function BlocksView({ blocks, refreshBlocks }) {
 // ---------------------------------------------------------------------------
 // Meals — named assemblies of Blocks with per-Block serving counts
 // ---------------------------------------------------------------------------
-function MealEditor({ existingMeal, blocks, onSave, onCancel }) {
+function MealEditor({ existingMeal, blocks, blocksById, onSave, onCancel }) {
   const [name, setName] = useState(existingMeal ? existingMeal.name : "");
   const [items, setItems] = useState(existingMeal ? existingMeal.items : []);
   const [pickBlockId, setPickBlockId] = useState(blocks[0] ? blocks[0].id : "");
   const [pickServings, setPickServings] = useState(1);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
-
-  const blocksById = useMemo(() => {
-    const map = {};
-    blocks.forEach((b) => { map[b.id] = b; });
-    return map;
-  }, [blocks]);
 
   const totals = useMemo(() => mealTotals({ items }, blocksById), [items, blocksById]);
 
@@ -848,15 +831,9 @@ function MealEditor({ existingMeal, blocks, onSave, onCancel }) {
   );
 }
 
-function MealsView({ meals, blocks, refreshMeals }) {
+function MealsView({ meals, blocks, blocksById, refreshMeals }) {
   const [editing, setEditing] = useState(null);
   const [error, setError] = useState(null);
-
-  const blocksById = useMemo(() => {
-    const map = {};
-    blocks.forEach((b) => { map[b.id] = b; });
-    return map;
-  }, [blocks]);
 
   const handleSave = async (meal) => {
     await saveMeal(meal);
@@ -879,6 +856,7 @@ function MealsView({ meals, blocks, refreshMeals }) {
       <MealEditor
         existingMeal={editing === "new" ? null : editing}
         blocks={blocks}
+        blocksById={blocksById}
         onSave={handleSave}
         onCancel={() => setEditing(null)}
       />
@@ -925,7 +903,7 @@ function MealsView({ meals, blocks, refreshMeals }) {
 // ---------------------------------------------------------------------------
 // Today (the vertical "totem" day view)
 // ---------------------------------------------------------------------------
-function TodayView({ blocks, meals }) {
+function TodayView({ blocks, meals, blocksById, mealsById }) {
   const today = useMemo(() => localDateStr(), []);
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -934,18 +912,6 @@ function TodayView({ blocks, meals }) {
   const [logType, setLogType] = useState("block");
   const [pickId, setPickId] = useState("");
   const [pickServings, setPickServings] = useState(1);
-
-  const blocksById = useMemo(() => {
-    const map = {};
-    blocks.forEach((b) => { map[b.id] = b; });
-    return map;
-  }, [blocks]);
-
-  const mealsById = useMemo(() => {
-    const map = {};
-    meals.forEach((m) => { map[m.id] = m; });
-    return map;
-  }, [meals]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -1172,6 +1138,18 @@ function MainApp({ session }) {
     refreshMeals();
   }, [refreshBlocks, refreshMeals]);
 
+  const blocksById = useMemo(() => {
+    const map = {};
+    blocks.forEach((b) => { map[b.id] = b; });
+    return map;
+  }, [blocks]);
+
+  const mealsById = useMemo(() => {
+    const map = {};
+    meals.forEach((m) => { map[m.id] = m; });
+    return map;
+  }, [meals]);
+
   return (
     <div className="app-shell">
       <div className="top-bar">
@@ -1198,9 +1176,9 @@ function MainApp({ session }) {
       {loadingBlocks ? (
         <p className="muted">Loading…</p>
       ) : tab === "today" ? (
-        <TodayView blocks={blocks} meals={meals} />
+        <TodayView blocks={blocks} meals={meals} blocksById={blocksById} mealsById={mealsById} />
       ) : tab === "meals" ? (
-        <MealsView meals={meals} blocks={blocks} refreshMeals={refreshMeals} />
+        <MealsView meals={meals} blocks={blocks} blocksById={blocksById} refreshMeals={refreshMeals} />
       ) : (
         <BlocksView blocks={blocks} refreshBlocks={refreshBlocks} />
       )}

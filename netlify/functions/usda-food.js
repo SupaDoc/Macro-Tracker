@@ -34,16 +34,12 @@ exports.handler = async (event) => {
     }
 
     const per100g = extractPer100g(data.foodNutrients || []);
-    const labelNutrients = data.labelNutrients || null; // present for Branded foods
 
     return json(200, {
       fdcId: data.fdcId,
       description: data.description,
-      dataType: data.dataType,
       servingSize: data.servingSize || null,
-      servingSizeUnit: data.servingSizeUnit || null,
       per100g,
-      labelNutrients, // { calories: {value}, protein: {value}, fat: {value}, carbohydrates: {value}, ... } per label serving
     });
   } catch (err) {
     return json(502, { error: `Failed to reach USDA API: ${err.message}` });
