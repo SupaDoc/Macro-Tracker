@@ -1,6 +1,10 @@
 [build]
   publish = "."
   functions = "netlify/functions"
+  # Generates config.js from the SUPABASE_URL / SUPABASE_ANON_KEY env vars set
+  # in Netlify site settings, since config.js is gitignored and there's no
+  # other build step. See config.example.js for the shape.
+  command = "node scripts/write-config.js"
 
 [functions]
   node_bundler = "esbuild"
