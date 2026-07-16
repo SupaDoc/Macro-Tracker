@@ -250,7 +250,15 @@
 <body>
 <div id="root"></div>
 
-<script type="text/babel" data-presets="react">
+<script>
+// @babel/standalone's default "react" preset now uses the automatic JSX
+// runtime, which emits `import ... from "react/jsx-runtime"` — that breaks
+// as a classic (non-module) script. Force the classic runtime instead.
+Babel.registerPreset("react-classic", {
+  presets: [[Babel.availablePresets.react, { runtime: "classic" }]],
+});
+</script>
+<script type="text/babel" data-presets="react-classic">
 const { useState, useEffect, useCallback, useMemo } = React;
 
 // ---------------------------------------------------------------------------
