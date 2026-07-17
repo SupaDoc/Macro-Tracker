@@ -6,6 +6,6 @@
 // control is enforced by the RLS policies in supabase/schema.sql, not by
 // keeping this key secret.
 window.APP_CONFIG = {
-  SUPABASE_URL: "https://YOUR-PROJECT-REF.supabase.co",
-  SUPABASE_ANON_KEY: "YOUR-ANON-PUBLIC-KEY",
+  SUPABASE_URL: "https://supabase.com/dashboard/project/jioouufgjdglrnskvorf",
+  SUPABASE_ANON_KEY: "sb_publishable_qKg_F96HwHkkGvXSGK0HfQ_YzNyxr7h",
 };
