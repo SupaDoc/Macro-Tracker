@@ -1,10 +1,12 @@
 [build]
   publish = "."
   functions = "netlify/functions"
-  # Generates config.js from the SUPABASE_URL / SUPABASE_ANON_KEY env vars set
-  # in Netlify site settings, since config.js is gitignored and there's no
-  # other build step. See config.example.js for the shape.
-  command = "node scripts/write-config.js"
+  # No build command: config.js is committed directly (see config.js for why),
+  # and this is otherwise a static site with no build tooling. An earlier
+  # version generated config.js here from env vars via scripts/write-config.js,
+  # but that script exits non-zero when the env vars aren't visible in a given
+  # deploy context (e.g. deploy-preview), which fails the whole build before
+  # it ever reaches the publish step — worse than just committing the file.
 
 [functions]
   node_bundler = "esbuild"
