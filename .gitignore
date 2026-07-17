@@ -1,6 +1,3 @@
-# Local Supabase credentials — never commit real keys
-config.js
-
 # Netlify CLI local state
 .netlify/
 
